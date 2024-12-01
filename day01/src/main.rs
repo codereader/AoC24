@@ -1,5 +1,6 @@
 use std::io::Read;
 use std::fs::File;
+use std::convert::TryFrom;
 
 fn main() {
     // Read a file in the local file system
@@ -35,9 +36,18 @@ let mut file_content = "3   4
     left.sort();
     right.sort();
 
-    let sum: i64 = left.iter().zip(right.iter()).map(|(l, r)| (r - l).abs()).sum();
+    let part1_sum: i64 = left.iter().zip(right.iter()).map(|(l, r)| (r - l).abs()).sum();
 
-    println!("[Part 1] Sum = {:?}", sum); // 1651298
+    println!("[Part 1] Sum = {:?}", part1_sum); // 1651298
 
-    
+    let mut part2_sum = 0;
+
+    // Check how often each number in the left list occurs in the right one, then multiply it
+    for l in left.iter() {
+        let count = right.iter().filter(|&x| x == l).count();
+        part2_sum += l * i64::try_from(count).expect("Cannot convert this value");
+    }
+
+    // Sum over all multiplications
+    println!("[Part 2] Sum = {:?}", part2_sum); // 21306195
 }
