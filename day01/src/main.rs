@@ -15,41 +15,29 @@ let mut file_content = "3   4
 3   3";
 */
 
-    let mut file_content =String::new();
+    let mut file_content = String::new();
     // Copy contents of file to a mutable string
     data_file.read_to_string(&mut file_content).unwrap();
     let normalized_file = file_content.replace('\r', "");
     let lines = normalized_file.split('\n').filter(|&x| !x.is_empty());
 
+    // Parse the lines into two lists, left and right
     let mut left: Vec<i64> = Vec::new();
     let mut right: Vec<i64> = Vec::new();
 
     for line in lines {
-        println!("{}", line);
-        let pieces: Vec<_> = line.split(' ').filter(|&x| !x.is_empty()).collect();
+        let mut pieces = line.split(' ').filter(|&x| !x.is_empty());
 
-        println!("First piece: {:?}", pieces[0]);
-        println!("Second piece: {:?}", pieces[1]);
-
-        left.push(pieces[0].parse::<i64>().unwrap());
-        right.push(pieces[1].parse::<i64>().unwrap());
-
-        println!("Left: {0}, Right: {1}", pieces[0].parse::<i64>().unwrap(), pieces[1].parse::<i64>().unwrap());
+        left.push(pieces.next().expect("No left value").parse::<i64>().unwrap());
+        right.push(pieces.next().expect("No right value").parse::<i64>().unwrap());
     }
 
     left.sort();
     right.sort();
-    let mut sum: i64 = 0;
 
-    for i in 0..left.len() {
-        println!("Distance between {0} and {1} is {2}", left[i], right[i], (right[i] - left[i]).abs());
-        sum += (right[i] - left[i]).abs();
-    }
+    let sum: i64 = left.iter().zip(right.iter()).map(|(l, r)| (r - l).abs()).sum();
 
-    println!("Left: {:?}", left);
-    println!("Right: {:?}", right);
+    println!("[Part 1] Sum = {:?}", sum); // 1651298
+
     
-    println!(" ---- ");
-    println!("Sum = {:?}", sum);
-    //println!("Data file: {0}", file_content);
 }
