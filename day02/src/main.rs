@@ -49,38 +49,32 @@ fn main() {
     println!("[Part2]: Safe report count = {}", safe_report_count_part2); // 665
 }
 
-fn report_is_valid(pieces: impl IntoIterator<Item = impl AsRef<str>>) -> bool {
-    let mut should_increase: Option<bool> = None;
+fn report_is_valid(input: impl IntoIterator<Item = impl AsRef<str>>) -> bool {
     let mut is_safe = true;
-    let mut previous_value: Option<i64> = None; 
 
-    for piece in pieces {
-        let value = piece.as_ref().parse::<i64>().expect("Parsing error");
-        
-        if previous_value.is_some() {
-            let difference = value - previous_value.unwrap();
+    let pieces: Vec<_> = input.into_iter().map(|x| x.as_ref().parse::<i64>().expect("Parsing error")).collect();
+    let should_increase = pieces[1] - pieces[0] > 0;
 
-            // Check the increase/decrease amount bounds
-            let abs_diff = difference.abs();
-            if abs_diff > 3 || abs_diff < 1 {
-                is_safe = false;
-                break;
-            }
+    for index in 1..pieces.len() {
+        let previous_value = pieces[index - 1];
+        let value = pieces[index];
 
-            let is_increase = difference > 0;
+        let difference = value - previous_value;
 
-            if should_increase.is_some() {
-                // Check if the row is violating the increase/decrease rule
-                if is_increase != should_increase.unwrap() {
-                    is_safe = false;
-                    break;
-                }
-            }
-
-            should_increase = Option::from(is_increase);
+        // Check the increase/decrease amount bounds
+        let abs_diff = difference.abs();
+        if abs_diff > 3 || abs_diff < 1 {
+            is_safe = false;
+            break;
         }
 
-        previous_value = Option::from(value);
+        let is_increase = difference > 0;
+
+        // Check if the row is violating the increase/decrease rule
+        if is_increase != should_increase {
+            is_safe = false;
+            break;
+        }
     }
 
     return is_safe;
