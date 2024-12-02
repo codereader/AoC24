@@ -2,7 +2,7 @@ use std::io::Read;
 use std::fs::File;
 
 fn main() {
-    
+    /*
     // Create an empty mutable string
     let mut test_content = "7 6 4 2 1
     1 2 7 8 9
@@ -10,6 +10,7 @@ fn main() {
     1 3 2 4 5
     8 6 4 4 1
     1 3 6 7 9";
+    */
     
     // Read a file in the local file system
     let mut data_file = File::open("src/input.txt").unwrap();
@@ -18,38 +19,37 @@ fn main() {
     data_file.read_to_string(&mut file_content).unwrap();
     
     let normalized_file = file_content.replace('\r', "");
-    let lines = normalized_file.split('\n').filter(|&x| !x.is_empty());
+    let lines: Vec<_> = normalized_file.split('\n').filter(|&x| !x.is_empty()).collect();
 
     let mut safe_report_count_part1 = 0;
 
-    for line in lines {
+    for line in &lines {
         let pieces = line.split(' ').filter(|&x| !x.is_empty());
-        let is_safe = evaluate_report_part1(pieces);
+        let is_safe = report_is_valid(pieces);
         
         if is_safe {
             safe_report_count_part1 += 1;
         }
     }
 
-    println!("[Part1]: Safe report count = {}", safe_report_count_part1);
+    println!("[Part1]: Safe report count = {}", safe_report_count_part1); // 631
 
     let mut safe_report_count_part2 = 0;
-    let lines2 = normalized_file.split('\n').filter(|&x| !x.is_empty());
 
-    for line in lines2 {
+    for line in &lines {
         let is_safe = evaluate_report_part2(line);
         
-        println!("{0} is {1}", line, is_safe);
+        //println!("{0} is {1}", line, is_safe);
 
         if is_safe {
             safe_report_count_part2 += 1;
         }
     }
 
-    println!("[Part2]: Safe report count = {}", safe_report_count_part2);
+    println!("[Part2]: Safe report count = {}", safe_report_count_part2); // 665
 }
 
-fn evaluate_report_part1(pieces: impl IntoIterator<Item = impl AsRef<str>>) -> bool {
+fn report_is_valid(pieces: impl IntoIterator<Item = impl AsRef<str>>) -> bool {
     let mut should_increase: Option<bool> = None;
     let mut is_safe = true;
     let mut previous_value: Option<i64> = None; 
@@ -90,14 +90,10 @@ fn evaluate_report_part2(line: &str) -> bool {
 
     let pieces: Vec<_> = line.split(' ').filter(|&x| !x.is_empty()).collect();
     
-    let length = pieces.len();
-    
-    for skip_index in 0..length {
-        let new_sequence = pieces.clone().into_iter().enumerate().filter(|&(i, _)| i != skip_index).map(|(_, v)| v);
+    for skip_index in 0..pieces.len() {
+        let new_sequence = (&pieces).into_iter().enumerate().filter(|&(i, _)| i != skip_index).map(|(_, v)| v);
 
-        let is_safe = evaluate_report_part1(new_sequence);
-
-        if is_safe {
+        if report_is_valid(new_sequence) {
             return true;
         }
     }
