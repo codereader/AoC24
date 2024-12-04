@@ -90,5 +90,43 @@ MXMXAXMASX";
 
     println!("[Part1]: XMAS occurrences: {0}", sum_part1); // 2536
 
-    println!("[Part2]: TODO");
+    let mut sum_part2 = 0;
+
+    for y in 0..height-2 {
+        let width = lines[y].len();
+        for x in 0..width - 2 {
+
+            // Diagonal down = MAS 
+            if lines[y].chars().nth(x).unwrap() == 'M' &&
+                lines[y + 1].chars().nth(x + 1).unwrap() == 'A' &&
+                lines[y + 2].chars().nth(x + 2).unwrap() == 'S' {
+
+                if (lines[y + 2].chars().nth(x).unwrap() == 'M' &&
+                    lines[y + 1].chars().nth(x + 1).unwrap() == 'A' &&
+                    lines[y + 0].chars().nth(x + 2).unwrap() == 'S') ||
+                    (lines[y + 2].chars().nth(x).unwrap() == 'S' &&
+                    lines[y + 1].chars().nth(x + 1).unwrap() == 'A' &&
+                    lines[y + 0].chars().nth(x + 2).unwrap() == 'M') {
+                    sum_part2 += 1;
+                }
+            }
+
+            // Diagonal down = SAM 
+            if lines[y].chars().nth(x).unwrap() == 'S' &&
+                lines[y + 1].chars().nth(x + 1).unwrap() == 'A' &&
+                lines[y + 2].chars().nth(x + 2).unwrap() == 'M' {
+
+                if (lines[y + 2].chars().nth(x).unwrap() == 'M' &&
+                    lines[y + 1].chars().nth(x + 1).unwrap() == 'A' &&
+                    lines[y + 0].chars().nth(x + 2).unwrap() == 'S') ||
+                    (lines[y + 2].chars().nth(x).unwrap() == 'S' &&
+                    lines[y + 1].chars().nth(x + 1).unwrap() == 'A' &&
+                    lines[y + 0].chars().nth(x + 2).unwrap() == 'M') {
+                    sum_part2 += 1;
+                }
+            }
+        }
+    }
+
+    println!("[Part2]: X-MASes = {0}", sum_part2);
 }
