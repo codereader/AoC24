@@ -85,7 +85,7 @@ fn main() {
 
     for pages in printouts.iter() {
 
-        let is_ok = evaluate_page(&pages, &rules_before, &rules_after);
+        let is_ok = evaluate_page(pages.clone(), &rules_before, &rules_after, |_, _| {});
 
         if is_ok {
             //println!("Page is OK");
@@ -107,48 +107,13 @@ fn main() {
         //println!("{:?}", pages);
 
         let mut _runs = 0;
-        while !evaluate_page(&pages, &rules_before, &rules_after) {
+        while !evaluate_page(pages.clone(), &rules_before, &rules_after, |a: usize, b: usize|
+        {
+            let temp = pages[a];
+            pages[a] = pages[b];
+            pages[b] = temp;
+        }) {
             _runs += 1;
-            for i in 0..pages.len() {
-                for left in 0..i {
-                    let rules_for_page = rules_after.get(&pages[i]);
-    
-                    if rules_for_page.is_none() {
-                        continue;
-                    }
-    
-                    if rules_for_page.unwrap().contains(&pages[left]) {
-                        //println!("OK");
-                    }
-                    else {
-                        //println!("Rule Violation");
-                        let temp = pages[left];
-                        pages[left] = pages[i];
-                        pages[i] = temp;
-                        break;
-                    }
-                }
-    
-                let rules_for_page = rules_before.get(&pages[i]);
-    
-                if rules_for_page.is_none() {
-                    continue;
-                }
-    
-                for right in i+1..pages.len() {
-                    //print!("{0} must be before {1}: ", pages[i], pages[right]);
-    
-                    if rules_for_page.unwrap().contains(&pages[right]) {
-                        //println!("OK");
-                    }
-                    else {
-                        let temp = pages[right];
-                        pages[right] = pages[i];
-                        pages[i] = temp;
-                        break;
-                    }
-                }
-            }
         }
 
         //println!("Page after {0} runs: {1:?}", runs, pages);
@@ -160,7 +125,9 @@ fn main() {
     println!("[Part2]: Sum of middle page numbers of fixed pages = {0}", sum_part2); // 3062
 }
 
-fn evaluate_page(pages: &Vec<i32>, rules_before: &HashMap<i32, HashSet<i32>>, rules_after: &HashMap<i32, HashSet<i32>>) -> bool {
+fn evaluate_page<F: FnMut(usize, usize)>(pages: Vec<i32>,
+    rules_before: &HashMap<i32, HashSet<i32>>, rules_after: &HashMap<i32, HashSet<i32>>,
+    mut fix_action: F) -> bool {
     for i in 0..pages.len() {
         for left in 0..i {
             //print!("{0} must be after {1}: ", pages[i], pages[left]);
@@ -176,6 +143,7 @@ fn evaluate_page(pages: &Vec<i32>, rules_before: &HashMap<i32, HashSet<i32>>, ru
             }
             else {
                 //println!("Rule Violation");
+                fix_action(i, left);
                 return false;
             }
         }
@@ -193,7 +161,7 @@ fn evaluate_page(pages: &Vec<i32>, rules_before: &HashMap<i32, HashSet<i32>>, ru
                 //println!("OK");
             }
             else {
-                //println!("Rule Violation");
+                fix_action(i, right);
                 return false;
             }
         }
