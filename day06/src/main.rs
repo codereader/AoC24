@@ -29,6 +29,9 @@ fn main() {
     let x = lines[usize::try_from(start_y).unwrap()].iter().position(|&c| c == '^').unwrap();
     let start_x = i32::try_from(x).expect("Out of bounds");
     
+    let width = i32::try_from(lines[0].len()).expect("Failed to convert");
+    let height = i32::try_from(lines.len()).expect("Failed to convert");
+
     let mut pos = (start_x, start_y);
     let mut dir = (0, -1);
 
@@ -38,6 +41,9 @@ fn main() {
     let mut visited_positions: HashSet<(i32, i32)> = HashSet::new();
     visited_positions.insert((pos.0, pos.1));
 
+    let mut visited_directions: HashSet<(i32, i32, i32, i32)> = HashSet::new();
+    visited_directions.insert((pos.0, pos.1, dir.0, dir.1));
+
     let mut blocker_positions: Vec<(i32, i32)> = Vec::new();
 
     loop {
@@ -45,7 +51,7 @@ fn main() {
 
         let new_pos = (pos.0 + dir.0, pos.1 + dir.1);
 
-        let next = get_pos_safe(&new_pos, &lines);
+        let next = get_pos_safe(&new_pos, &lines, width, height);
 
         if next == '\0' {
             break;
@@ -56,7 +62,7 @@ fn main() {
             let right = (-dir.1, dir.0);
 
             // Evaluate this path
-            let is_looping_path = evaluate_path(&pos, &right, &lines, &new_pos);
+            let is_looping_path = evaluate_path(&pos, &right, &lines, &visited_directions, &new_pos);
 
             if is_looping_path {
                 // By placing a blocker in the next square, we'd create a loop
@@ -76,28 +82,31 @@ fn main() {
         }
 
         visited_positions.insert((pos.0, pos.1));
+        visited_directions.insert((pos.0, pos.1, dir.0, dir.1));
     }
 
     let elapsed = now.elapsed();
     
     println!("[Part1]: Number of visited grid positions = {0}", visited_positions.len()); // 4647
-    println!("[Part2]: Number of blocker positions = {0}", blocker_positions.len()); // ???
+    println!("[Part2]: Number of blocker positions = {0}", blocker_positions.len()); // 1723
     println!("Elapsed Time: {:.2?}", elapsed);
 }
 
-fn evaluate_path(probe_pos: &(i32, i32), dir: &(i32, i32), lines: &Vec<Vec<char>>, blocked_pos: &(i32, i32)) -> bool {
+fn evaluate_path(probe_pos: &(i32, i32), dir: &(i32, i32), lines: &Vec<Vec<char>>, parent_directions: &HashSet<(i32,i32,i32,i32)>, blocked_pos: &(i32, i32)) -> bool {
 
-    //let mut visited_positions: HashSet<(i32, i32)> = HashSet::new();
     let mut pos = probe_pos.clone();
     let mut dir = dir.clone();
 
     let mut visited_directions: HashSet<(i32, i32, i32, i32)> = HashSet::new();
     visited_directions.insert((pos.0, pos.1, dir.0, dir.1));
 
+    let width = i32::try_from(lines[0].len()).expect("Failed to convert");
+    let height = i32::try_from(lines.len()).expect("Failed to convert");
+
     loop {
         let new_pos = (pos.0 + dir.0, pos.1 + dir.1);
 
-        let next = get_pos_safe(&new_pos, &lines);
+        let next = get_pos_safe(&new_pos, &lines, width,  height);
 
         if next == '\0' {
             return false;
@@ -110,11 +119,10 @@ fn evaluate_path(probe_pos: &(i32, i32), dir: &(i32, i32), lines: &Vec<Vec<char>
             pos = new_pos;
         }
 
-        if visited_directions.get(&(pos.0, pos.1, dir.0, dir.1)).is_some() {
+        let entry = (pos.0, pos.1, dir.0, dir.1);
+        if parent_directions.contains(&entry) || !visited_directions.insert(entry) {
             return true; // loop
         }
-
-        visited_directions.insert((pos.0, pos.1, dir.0, dir.1));
     }
 }
 
@@ -146,10 +154,7 @@ fn print_grid(pos: &(i32, i32), lines: &Vec<Vec<char>>, visited_positions: &Hash
 }
 */
 
-fn pos_in_bounds(pos: &(i32, i32), lines: &Vec<Vec<char>>)->bool {
-    let width = i32::try_from(lines[0].len()).expect("Failed to convert");
-    let height = i32::try_from(lines.len()).expect("Failed to convert");
-
+fn pos_in_bounds(pos: &(i32, i32), width: i32, height: i32)->bool {
     if pos.0 >= width || pos.0 < 0 || pos.1 >= height || pos.1 < 0 {
         return false;
     }
@@ -157,9 +162,9 @@ fn pos_in_bounds(pos: &(i32, i32), lines: &Vec<Vec<char>>)->bool {
     return true;
 }
 
-fn get_pos_safe(pos: &(i32, i32), lines: &Vec<Vec<char>>)->char {
+fn get_pos_safe(pos: &(i32, i32), lines: &Vec<Vec<char>>, width: i32, height: i32)->char {
 
-    if !pos_in_bounds(pos, lines) {
+    if !pos_in_bounds(pos, width, height) {
         return '\0';
     }
 
