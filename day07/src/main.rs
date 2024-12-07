@@ -23,27 +23,35 @@ fn main() {
     let lines: Vec<_> = normalized_file.split('\n').filter(|&x| !x.is_empty()).collect();
 
     let mut sum_part1 = 0;
+    let mut sum_part2 = 0;
+
+    use std::time::Instant;
+    let now = Instant::now();
 
     for line in lines {
         let pieces: Vec<_> = line.split(": ").collect();
         let left = pieces[0].parse::<u64>().expect("Not a number");
         let operands: Vec<_> = pieces[1].split(' ').map(|x| x.parse::<u64>().expect("not a number")).collect(); 
 
-        let is_valid = evalute_operands(left, &operands);
-
-        if is_valid {
-            println!("{0} => {1:?} is VALID", left, operands);
+        if evalute_operands_part1(left, &operands) {
+            //println!("{0} => {1:?} is VALID", left, operands);
             sum_part1 += left;
         }
-        else {
-            println!("{0} => {1:?} is not valid", left, operands);
+
+        if evalute_operands_part2(left, &operands) {
+            //println!("{0} => {1:?} is VALID", left, operands);
+            sum_part2 += left;
         }
     }
 
+    let elapsed = now.elapsed();
+
     println!("[Part1]: Sum of valid test equations = {0}", sum_part1);
+    println!("[Part2]: Sum of valid test equations = {0}", sum_part2);
+    println!("Elapsed Time: {:.2?}", elapsed);
 }
 
-fn evalute_operands(left: u64, operands: &Vec<u64>) -> bool {
+fn evalute_operands_part1(left: u64, operands: &Vec<u64>) -> bool {
 
     let operator_count = u32::try_from(operands.len()-1).unwrap();
         
@@ -58,6 +66,51 @@ fn evalute_operands(left: u64, operands: &Vec<u64>) -> bool {
             }
             else {
                 sum *= operands[(1 + bit) as usize];
+            }
+        }
+
+        if sum == left {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+fn combinations(possibilities: u32, slots: u32)->Vec<String> {
+    
+    let mut result: Vec<String> = Vec::new();
+
+    if slots == 1 {
+        for p in 0..possibilities {
+            result.push(p.to_string());
+        }
+    }
+    else {
+        for p in 0..possibilities {
+            // Combine each value with the combinations of the subset
+            for subcombo in combinations(possibilities, slots - 1) {
+                result.push(p.to_string() + &subcombo);
+            }
+        }
+    }
+
+    result
+}
+
+fn evalute_operands_part2(left: u64, operands: &Vec<u64>) -> bool {
+
+    let operator_count = u32::try_from(operands.len()-1).unwrap();
+
+    for combo in combinations(3, operator_count) {
+        let mut sum = operands[0];
+
+        for digit in 0..combo.len() {
+            sum = match combo.chars().nth(digit).unwrap() {
+                '0' => { (sum.to_string() + &operands[(1 + digit) as usize].to_string()).parse::<u64>().unwrap() }
+                '1' => { sum + operands[(1 + digit) as usize] }
+                '2' => { sum * operands[(1 + digit) as usize] }
+                _ => panic!()
             }
         }
 
