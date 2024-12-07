@@ -168,6 +168,6 @@ fn get_pos_safe(pos: &(i32, i32), lines: &Vec<Vec<char>>, width: i32, height: i3
         return '\0';
     }
 
-    return lines[usize::try_from(pos.1).unwrap()][usize::try_from(pos.0).unwrap()];
+    return lines[pos.1 as usize][pos.0 as usize];
 }
 
