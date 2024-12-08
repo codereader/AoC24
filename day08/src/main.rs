@@ -33,7 +33,8 @@ fn main() {
     let now = Instant::now();
 
     let mut antennae: HashMap<char, Vec<(i32, i32)>> = HashMap::new();
-    let mut unique_positions: HashSet<(i32, i32)> = HashSet::new();
+    let mut unique_positions_part1: HashSet<(i32, i32)> = HashSet::new();
+    let mut unique_positions_part2: HashSet<(i32, i32)> = HashSet::new();
 
     for y in 0..lines.len() {
         for x in 0..lines[y].len() {
@@ -50,7 +51,8 @@ fn main() {
 
     //println!("{:?}", antennae);
 
-    for key_value in antennae {
+    // Part 1: Single Antinode generated in each direction
+    for key_value in antennae.iter() {
         let positions = &key_value.1;
 
         // Combine all antennae with one of the others
@@ -69,10 +71,44 @@ fn main() {
                 let antinode2_pos = (antenna2.0 - distance.0, antenna2.1 - distance.1);
 
                 if pos_within_grid(&antinode1_pos, width, height) {
-                    unique_positions.insert(antinode1_pos);
+                    unique_positions_part1.insert(antinode1_pos);
                 }
                 if pos_within_grid(&antinode2_pos, width, height) {
-                    unique_positions.insert(antinode2_pos);
+                    unique_positions_part1.insert(antinode2_pos);
+                }
+            }
+        }
+    }
+
+    // Part 2: Many Antinodes generated in each direction
+    for key_value in antennae {
+        let positions = &key_value.1;
+
+        // Combine all antennae with one of the others
+        for n in 0..positions.len()-1 {
+
+            let antenna1 = &positions[n];
+
+            for k in n+1..positions.len() {
+                let antenna2 = &positions[k];
+
+                // Vector 1->2
+                let distance = (antenna2.0 - antenna1.0, antenna2.1 - antenna1.1);
+
+                // The two antennae are positions on their own, they are within the grid
+                unique_positions_part2.insert(*antenna1);
+                unique_positions_part2.insert(*antenna2);
+                
+                let mut candidate =  (antenna2.0 + distance.0, antenna2.1 + distance.1);
+                while pos_within_grid(&candidate, width, height) {
+                    unique_positions_part2.insert(candidate);
+                    candidate = (candidate.0 + distance.0, candidate.1 + distance.1);
+                }
+
+                candidate = (antenna1.0 - distance.0, antenna1.1 - distance.1);
+                while pos_within_grid(&candidate, width, height) {
+                    unique_positions_part2.insert(candidate);
+                    candidate = (candidate.0 - distance.0, candidate.1 - distance.1);
                 }
             }
         }
@@ -80,7 +116,8 @@ fn main() {
 
     let elapsed = now.elapsed();
 
-    println!("[Part1]: Unique antinode locations = {0}", unique_positions.len());
+    println!("[Part1]: Unique antinode locations = {0}", unique_positions_part1.len());
+    println!("[Part2]: Unique antinode locations = {0}", unique_positions_part2.len());
     println!("Elapsed Time: {:.2?}", elapsed);
 }
 
