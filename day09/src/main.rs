@@ -1,6 +1,12 @@
 use std::io::Read;
 use std::fs::File;
 
+struct Block {
+    occupied: bool,
+    file_id: i32,
+    length: usize,
+}
+
 fn main() {
     let _test_content = "2333133121414131402";
     
@@ -11,7 +17,6 @@ fn main() {
     data_file.read_to_string(&mut file_content).unwrap();
     
     let content = file_content.replace('\r', "");
-    //let lines: Vec<_> = normalized_file.split('\n').filter(|&x| !x.is_empty()).collect();
 
     use std::time::Instant;
     let now = Instant::now();
@@ -21,6 +26,7 @@ fn main() {
     let num_blocks = content.len() / 2 + content.len() % 2;
     println!("We have {0} blocks", num_blocks);
 
+    // Part 1: Calculate the checksum from the left, streaming blocks from the far right into free space
     let mut consume_block_index = num_blocks - 1;
     let mut consume_block_id = consume_block_index;
     let mut consume_block_width = chars[consume_block_index * 2].to_string().parse::<usize>().unwrap();
@@ -79,10 +85,86 @@ fn main() {
         }
     }
 
+    // Part 2: Parse the block info into a linked list to be able to move them as a whole
+    let mut blocks: Vec<Block> = Vec::new();
+
+    for pos in 0..chars.len() {
+        blocks.push(Block {
+            length: chars[pos].to_string().parse::<usize>().expect("Parse error"),
+            occupied: pos % 2 == 0,
+            file_id: if pos % 2 == 0 { i32::try_from(pos).unwrap() / 2 } else { -1 },
+        });
+    }
+
+    let mut move_block_index = blocks.len();
+
+    while move_block_index > 0 {
+
+        move_block_index -= 1;
+        
+        if !blocks[move_block_index].occupied {
+            continue;
+        }
+
+        for target_block_index in 0..move_block_index {
+
+            if !blocks[target_block_index].occupied && blocks[target_block_index].length >= blocks[move_block_index].length {
+                blocks[target_block_index].occupied = true;
+                blocks[target_block_index].file_id = blocks[move_block_index].file_id;
+                blocks[move_block_index].occupied = false;
+                blocks[move_block_index].file_id = -1;
+
+                let remaining_space = blocks[target_block_index].length - blocks[move_block_index].length;
+
+                // The target block length might change
+                blocks[target_block_index].length = blocks[move_block_index].length;
+
+                if remaining_space > 0 {
+                    blocks.insert(target_block_index + 1, Block {
+                        occupied: false,
+                        file_id: -1,
+                        length: remaining_space,
+                    });
+                    move_block_index += 1; // everything has moved to the right by 1
+                }
+                break;
+            }
+        }
+    }
+
+    /* 
+    for b in 0..blocks.len() {
+        let block = blocks.get(b).unwrap();
+
+        for _ in 0..block.length {
+            print!("{}", if block.occupied { block.file_id.to_string() } else { String::from(".") });
+        }
+    }
+
+    println!();
+    */
+
+    let mut checksum_part2: usize = 0;
+    let mut current_pos = 0;
+
+    for b in 0..blocks.len() {
+        let block = blocks.get(b).unwrap();
+
+        if !block.occupied {
+            current_pos += block.length;
+            continue;
+        }
+
+        for _ in 0..block.length {
+            checksum_part2 += current_pos * (block.file_id as usize);
+            current_pos += 1
+        }
+    }
+
     let elapsed = now.elapsed();
 
     println!("[Part1]: Checksum = {0}", checksum); // 6154342787400
-    println!("[Part2]: ... = {0}", 0); // ???
+    println!("[Part2]: Checksum = {0}", checksum_part2); // 6183632723350
     println!("Elapsed Time: {:.2?}", elapsed);
 }
 
