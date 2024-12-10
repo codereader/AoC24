@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::fs::File;
-use std::path;
 
 fn main() {
     // Create an empty mutable string
@@ -42,6 +41,7 @@ fn main() {
     }
 
     let mut trailhead_scores: HashMap<(i32, i32), HashSet<(i32, i32)>> = HashMap::new();
+    let mut trailhead_scores_part2: HashMap<(i32, i32), i32> = HashMap::new();
 
     while paths_to_investigate.len() > 0 {
         let path = paths_to_investigate.pop().expect("Logic error");
@@ -60,6 +60,7 @@ fn main() {
 
             if new_path.len() == 10 {
                 trailhead_scores.entry(path_start).or_insert_with(|| HashSet::new()).insert((last_pos.0, last_pos.1 + 1));
+                *trailhead_scores_part2.entry(path_start).or_insert(0) += 1;
             }
             else {
                 paths_to_investigate.push(new_path);
@@ -71,6 +72,7 @@ fn main() {
 
             if new_path.len() == 10 {
                 trailhead_scores.entry(path_start).or_insert_with(|| HashSet::new()).insert((last_pos.0, last_pos.1 - 1));
+                *trailhead_scores_part2.entry(path_start).or_insert(0) += 1;
             }
             else {
                 paths_to_investigate.push(new_path);
@@ -82,6 +84,7 @@ fn main() {
 
             if new_path.len() == 10 {
                 trailhead_scores.entry(path_start).or_insert_with(|| HashSet::new()).insert((last_pos.0 + 1, last_pos.1));
+                *trailhead_scores_part2.entry(path_start).or_insert(0) += 1;
             }
             else {
                 paths_to_investigate.push(new_path);
@@ -93,6 +96,7 @@ fn main() {
 
             if new_path.len() == 10 {
                 trailhead_scores.entry(path_start).or_insert_with(|| HashSet::new()).insert((last_pos.0 - 1, last_pos.1));
+                *trailhead_scores_part2.entry(path_start).or_insert(0) += 1;
             }
             else {
                 paths_to_investigate.push(new_path);
@@ -104,13 +108,18 @@ fn main() {
 
     let elapsed = now.elapsed();
     let mut sum_part1 = 0;
+    let mut sum_part2 = 0;
 
     for set in trailhead_scores.values().into_iter() {
         sum_part1 += set.len();
     }
 
+    for rating in trailhead_scores_part2.values().into_iter() {
+        sum_part2 += *rating as usize;
+    }
+
     println!("[Part1]: Sum of trailhead scores = {0}", sum_part1); // 754
-    println!("[Part2]: ... = {0}", 0); // ???
+    println!("[Part2]: Sum trailhead rating = {0}", sum_part2); // 1609
     println!("Elapsed Time: {:.2?}", elapsed);
 }
 
