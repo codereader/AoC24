@@ -1,6 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::io::Read;
 use std::fs::File;
+use itertools::Itertools;
 
 fn main() {
     // Create an empty mutable string
@@ -40,87 +41,55 @@ fn main() {
         }
     }
 
-    let mut trailhead_scores: HashMap<(i32, i32), HashSet<(i32, i32)>> = HashMap::new();
-    let mut trailhead_scores_part2: HashMap<(i32, i32), i32> = HashMap::new();
+    let mut trails: HashMap<(i32, i32), Vec<(i32, i32)>> = HashMap::new();
 
     while paths_to_investigate.len() > 0 {
         let path = paths_to_investigate.pop().expect("Logic error");
         
-        let path_start = (path[0].0, path[0].1);
-        //println!("{:?}", path_start);
-
         let next_height = path.len().to_string().chars().nth(0).unwrap();
 
         // Check surroundings
         let last_pos = path.last().unwrap().clone();
 
-        if get_grid_value_safe(&grid, last_pos.0, last_pos.1 + 1) == next_height {
-            let mut new_path = path.clone();
-            new_path.push((last_pos.0, last_pos.1 + 1));
-
-            if new_path.len() == 10 {
-                trailhead_scores.entry(path_start).or_insert_with(|| HashSet::new()).insert((last_pos.0, last_pos.1 + 1));
-                *trailhead_scores_part2.entry(path_start).or_insert(0) += 1;
-            }
-            else {
-                paths_to_investigate.push(new_path);
-            }
-        }
-        if get_grid_value_safe(&grid, last_pos.0, last_pos.1 - 1) == next_height {
-            let mut new_path = path.clone();
-            new_path.push((last_pos.0, last_pos.1 - 1));
-
-            if new_path.len() == 10 {
-                trailhead_scores.entry(path_start).or_insert_with(|| HashSet::new()).insert((last_pos.0, last_pos.1 - 1));
-                *trailhead_scores_part2.entry(path_start).or_insert(0) += 1;
-            }
-            else {
-                paths_to_investigate.push(new_path);
-            }
-        }
-        if get_grid_value_safe(&grid, last_pos.0 + 1, last_pos.1) == next_height {
-            let mut new_path = path.clone();
-            new_path.push((last_pos.0 + 1, last_pos.1));
-
-            if new_path.len() == 10 {
-                trailhead_scores.entry(path_start).or_insert_with(|| HashSet::new()).insert((last_pos.0 + 1, last_pos.1));
-                *trailhead_scores_part2.entry(path_start).or_insert(0) += 1;
-            }
-            else {
-                paths_to_investigate.push(new_path);
-            }
-        }
-        if get_grid_value_safe(&grid, last_pos.0 - 1, last_pos.1) == next_height {
-            let mut new_path = path.clone();
-            new_path.push((last_pos.0 - 1, last_pos.1));
-
-            if new_path.len() == 10 {
-                trailhead_scores.entry(path_start).or_insert_with(|| HashSet::new()).insert((last_pos.0 - 1, last_pos.1));
-                *trailhead_scores_part2.entry(path_start).or_insert(0) += 1;
-            }
-            else {
-                paths_to_investigate.push(new_path);
-            }
-        }
+        investigate_position(&grid, (last_pos.0, last_pos.1 - 1), next_height, &path, &mut trails, &mut paths_to_investigate);
+        investigate_position(&grid, (last_pos.0, last_pos.1 + 1), next_height, &path, &mut trails, &mut paths_to_investigate);
+        investigate_position(&grid, (last_pos.0 + 1, last_pos.1), next_height, &path, &mut trails, &mut paths_to_investigate);
+        investigate_position(&grid, (last_pos.0 - 1, last_pos.1), next_height, &path, &mut trails, &mut paths_to_investigate);
     }
 
-    //println!("{:?}", trailhead_scores);
+    //println!("{:?}", trails);
 
     let elapsed = now.elapsed();
     let mut sum_part1 = 0;
     let mut sum_part2 = 0;
 
-    for set in trailhead_scores.values().into_iter() {
-        sum_part1 += set.len();
+    for set in trails.values().into_iter() {
+        sum_part1 += set.iter().unique().count();
     }
 
-    for rating in trailhead_scores_part2.values().into_iter() {
-        sum_part2 += *rating as usize;
+    for set in trails.values().into_iter() {
+        sum_part2 += set.len();
     }
 
     println!("[Part1]: Sum of trailhead scores = {0}", sum_part1); // 754
     println!("[Part2]: Sum trailhead rating = {0}", sum_part2); // 1609
     println!("Elapsed Time: {:.2?}", elapsed);
+}
+
+fn investigate_position(grid: &Vec<Vec<char>>, pos: (i32, i32), next_height: char, path: &Vec<(i32, i32)>, trails: &mut HashMap<(i32, i32), Vec<(i32, i32)>>, paths_to_investigate: &mut Vec<Vec<(i32, i32)>>) {
+    if get_grid_value_safe(grid, pos.0, pos.1) == next_height {
+        let mut new_path = path.clone();
+        new_path.push((pos.0, pos.1));
+
+        if new_path.len() == 10 {
+            let path_start = (path[0].0, path[0].1);
+
+            trails.entry(path_start).or_insert_with(|| Vec::new()).push((pos.0, pos.1));
+        }
+        else {
+            paths_to_investigate.push(new_path);
+        }
+    }
 }
 
 fn get_grid_value_safe(grid: &Vec<Vec<char>>, x: i32, y: i32) -> char {
