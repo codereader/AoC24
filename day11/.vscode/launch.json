@@ -12,7 +12,8 @@
                 "args": [
                     "build",
                     "--bin=day11",
-                    "--package=day11"
+                    "--package=day11",
+                    "--release"
                 ],
                 "filter": {
                     "name": "day11",
