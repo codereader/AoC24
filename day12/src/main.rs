@@ -1,19 +1,15 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::fs::File;
 
 fn main() {
     // Create an empty mutable string
-    let _test_content = "RRRRIICCFF
-RRRRIICCCF
-VVRRRCCFFF
-VVRCCCJFFF
-VVVVCJJCFE
-VVIVCCJJEE
-VVIIICJJEE
-MIIIIIJJEE
-MIIISIJEEE
-MMMISSJEEE";
+    let _test_content = "AAAAAA
+AAABBA
+AAABBA
+ABBAAA
+ABBAAA
+AAAAAA";
     
     // Read a file in the local file system
     let mut data_file = File::open("src/input.txt").unwrap();
@@ -27,12 +23,19 @@ MMMISSJEEE";
     use std::time::Instant;
     let now = Instant::now();
     let mut sum_part1 = 0;
+    let mut sum_part2 = 0;
 
     let mut occupied: HashSet<(i32, i32)> = HashSet::new();
     let mut areas: Vec<(usize, usize)> = Vec::new();
+    let mut areas_part2: Vec<(usize, usize)> = Vec::new();
 
     let width = grid[0].len();
     let height = grid.len();
+
+    let SideNorth = 1;
+    let SideSouth = 2;
+    let SideEast = 3;
+    let SideWest = 4;
 
     for y in 0..height {
         for x in 0..width {
@@ -48,7 +51,8 @@ MMMISSJEEE";
     
             let mut area = 0;
             let mut perimeter = 0;
-    
+            let mut sides: HashMap<i32, HashSet<(i32, i32)>> = HashMap::new();
+
             while to_investigate.len() > 0 {
                 let pos = to_investigate.pop().unwrap();
     
@@ -60,7 +64,7 @@ MMMISSJEEE";
     
                 area += 1;
                 occupied.insert(pos);
-    
+
                 // Check all four directions
                 let north = (pos.0 + 0, pos.1 - 1);
                 let south = (pos.0 + 0, pos.1 + 1);
@@ -69,6 +73,13 @@ MMMISSJEEE";
     
                 if get_plant_safe(&grid, &north, width, height) != plant {
                     perimeter += 1;
+                    
+                    sides.entry(SideNorth).or_insert_with(|| HashSet::new()).insert(pos);
+
+                    // if !set.contains(&(pos.0 + 1, pos.1)) && !set.contains(&(pos.0 - 1, pos.1)) {
+                    //     num_sides += 1;
+                    // }
+                    //set.insert(pos);
                 }
                 else if !occupied.contains(&north) {
                     to_investigate.push(north);
@@ -76,6 +87,14 @@ MMMISSJEEE";
     
                 if get_plant_safe(&grid, &south, width, height) != plant {
                     perimeter += 1;
+                    
+                    sides.entry(SideSouth).or_insert_with(|| HashSet::new()).insert(pos);
+
+                    // if !set.contains(&(pos.0 + 1, pos.1)) && !set.contains(&(pos.0 - 1, pos.1)) {
+                    //     num_sides += 1;
+                    // }
+                    //set.insert(pos);
+                    //println!("South bound at {0}|{1}", pos.0, pos.1);
                 }
                 else if !occupied.contains(&south) {
                     to_investigate.push(south);
@@ -83,6 +102,13 @@ MMMISSJEEE";
     
                 if get_plant_safe(&grid, &east, width, height) != plant {
                     perimeter += 1;
+                    
+                    sides.entry(SideEast).or_insert_with(|| HashSet::new()).insert(pos);
+
+                    // if !set.contains(&(pos.0, pos.1 + 1)) && !set.contains(&(pos.0, pos.1 - 1)) {
+                    //     num_sides += 1;
+                    // }
+                    //set.insert(pos);
                 }
                 else if !occupied.contains(&east) {
                     to_investigate.push(east);
@@ -90,6 +116,13 @@ MMMISSJEEE";
     
                 if get_plant_safe(&grid, &west, width, height) != plant {
                     perimeter += 1;
+                    
+                    sides.entry(SideWest).or_insert_with(|| HashSet::new()).insert(pos);
+
+                    // if !set.contains(&(pos.0, pos.1 + 1)) && !set.contains(&(pos.0, pos.1 - 1)) {
+                    //     num_sides += 1;
+                    // }
+                    //set.insert(pos);
                 }
                 else if !occupied.contains(&west) {
                     to_investigate.push(west);
@@ -97,18 +130,54 @@ MMMISSJEEE";
             }
     
             areas.push((area, perimeter));
+
+            //println!("{:?}", sides);
+
+            let mut num_sides = 0;
+
+            for side in vec!(SideNorth, SideSouth, SideEast, SideWest) {
+
+                // Distinct y coords for N/S, distinct x coords for E/W
+                let distinct_coords = sides.get(&side).unwrap().iter().map(|(x,y)| if side == SideNorth || side == SideSouth { *y } else { *x }).collect::<HashSet<_>>();
+                
+                //println!("Distinct coords for {0}: {1:?}", side, distinct_coords);
+
+                for i in distinct_coords {
+                    // Get all x coordinates for this y coordinate (in case of N/S)
+                    let mut all_coords = sides.get(&side).unwrap().iter().filter(|(x,y)| if side == SideNorth || side == SideSouth { *y == i } else { *x == i })
+                        .map(|(x,y)| if side == SideNorth || side == SideSouth { x } else { y }).collect::<Vec<_>>();
+                    all_coords.sort();
+                    
+                    num_sides += 1;
+                    for i in 1..all_coords.len() {
+                        if *(all_coords[i]) != *(all_coords[i-1]) + 1 {
+                            num_sides += 1;
+                        }
+                    }
+                }
+
+                //println!("Sorted of area {0}, got sides: {1}", area, num_sides);
+            }
+
+            //let num_sides = sides.values().flatten().count();
+            areas_part2.push((area, num_sides));
         }
     }
 
-    //println!("{:?}", areas);
+    println!("{:?}", areas_part2);
 
     for area in areas.iter() {
         sum_part1 += area.0 * area.1;
     }    
 
+    for area in areas_part2.iter() {
+        sum_part2 += area.0 * area.1;
+    }
+
     let elapsed = now.elapsed();
 
-    println!("[Part1]: Total cost = {0}", sum_part1); // ???
+    println!("[Part1]: Total cost = {0}", sum_part1); // 1533024
+    println!("[Part2]: Discount cost = {0}", sum_part2); // ???
     println!("Elapsed Time: {:.2?}", elapsed);
 }
 
