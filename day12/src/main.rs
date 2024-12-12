@@ -73,13 +73,7 @@ AAAAAA";
     
                 if get_plant_safe(&grid, &north, width, height) != plant {
                     perimeter += 1;
-                    
                     sides.entry(SideNorth).or_insert_with(|| HashSet::new()).insert(pos);
-
-                    // if !set.contains(&(pos.0 + 1, pos.1)) && !set.contains(&(pos.0 - 1, pos.1)) {
-                    //     num_sides += 1;
-                    // }
-                    //set.insert(pos);
                 }
                 else if !occupied.contains(&north) {
                     to_investigate.push(north);
@@ -87,14 +81,7 @@ AAAAAA";
     
                 if get_plant_safe(&grid, &south, width, height) != plant {
                     perimeter += 1;
-                    
                     sides.entry(SideSouth).or_insert_with(|| HashSet::new()).insert(pos);
-
-                    // if !set.contains(&(pos.0 + 1, pos.1)) && !set.contains(&(pos.0 - 1, pos.1)) {
-                    //     num_sides += 1;
-                    // }
-                    //set.insert(pos);
-                    //println!("South bound at {0}|{1}", pos.0, pos.1);
                 }
                 else if !occupied.contains(&south) {
                     to_investigate.push(south);
@@ -102,13 +89,7 @@ AAAAAA";
     
                 if get_plant_safe(&grid, &east, width, height) != plant {
                     perimeter += 1;
-                    
                     sides.entry(SideEast).or_insert_with(|| HashSet::new()).insert(pos);
-
-                    // if !set.contains(&(pos.0, pos.1 + 1)) && !set.contains(&(pos.0, pos.1 - 1)) {
-                    //     num_sides += 1;
-                    // }
-                    //set.insert(pos);
                 }
                 else if !occupied.contains(&east) {
                     to_investigate.push(east);
@@ -116,13 +97,7 @@ AAAAAA";
     
                 if get_plant_safe(&grid, &west, width, height) != plant {
                     perimeter += 1;
-                    
                     sides.entry(SideWest).or_insert_with(|| HashSet::new()).insert(pos);
-
-                    // if !set.contains(&(pos.0, pos.1 + 1)) && !set.contains(&(pos.0, pos.1 - 1)) {
-                    //     num_sides += 1;
-                    // }
-                    //set.insert(pos);
                 }
                 else if !occupied.contains(&west) {
                     to_investigate.push(west);
@@ -131,21 +106,19 @@ AAAAAA";
     
             areas.push((area, perimeter));
 
-            //println!("{:?}", sides);
-
             let mut num_sides = 0;
 
             for side in vec!(SideNorth, SideSouth, SideEast, SideWest) {
 
-                // Distinct y coords for N/S, distinct x coords for E/W
-                let distinct_coords = sides.get(&side).unwrap().iter().map(|(x,y)| if side == SideNorth || side == SideSouth { *y } else { *x }).collect::<HashSet<_>>();
-                
-                //println!("Distinct coords for {0}: {1:?}", side, distinct_coords);
+                let is_north_or_south = side == SideNorth || side == SideSouth;
 
+                // Distinct y coords for N/S, distinct x coords for E/W
+                let distinct_coords = sides.get(&side).unwrap().iter().map(|(x,y)| if is_north_or_south { *y } else { *x }).collect::<HashSet<_>>();
+                
                 for i in distinct_coords {
                     // Get all x coordinates for this y coordinate (in case of N/S)
-                    let mut all_coords = sides.get(&side).unwrap().iter().filter(|(x,y)| if side == SideNorth || side == SideSouth { *y == i } else { *x == i })
-                        .map(|(x,y)| if side == SideNorth || side == SideSouth { x } else { y }).collect::<Vec<_>>();
+                    let mut all_coords = sides.get(&side).unwrap().iter().filter(|(x,y)| if is_north_or_south { *y == i } else { *x == i })
+                        .map(|(x,y)| if is_north_or_south { x } else { y }).collect::<Vec<_>>();
                     all_coords.sort();
                     
                     num_sides += 1;
@@ -155,16 +128,11 @@ AAAAAA";
                         }
                     }
                 }
-
-                //println!("Sorted of area {0}, got sides: {1}", area, num_sides);
             }
 
-            //let num_sides = sides.values().flatten().count();
             areas_part2.push((area, num_sides));
         }
     }
-
-    println!("{:?}", areas_part2);
 
     for area in areas.iter() {
         sum_part1 += area.0 * area.1;
@@ -177,7 +145,7 @@ AAAAAA";
     let elapsed = now.elapsed();
 
     println!("[Part1]: Total cost = {0}", sum_part1); // 1533024
-    println!("[Part2]: Discount cost = {0}", sum_part2); // ???
+    println!("[Part2]: Discount cost = {0}", sum_part2); // 910066
     println!("Elapsed Time: {:.2?}", elapsed);
 }
 
