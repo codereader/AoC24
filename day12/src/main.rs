@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::fs::File;
 use std::hash::Hash;
+use std::ops::Add;
 
 struct Vector2 {
     x: i32,
@@ -16,14 +17,43 @@ impl Vector2 {
         }
     }
 
+    fn add_by_value(&self, other: Self) -> Self {
+        Vector2 {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+
     fn from(tuple: &(i32, i32)) -> Vector2 {
         return Vector2 { x: tuple.0, y: tuple.1 }; 
     }
 
-    fn North() -> Vector2 { return Vector2 { x: 0, y: -1 }; }
-    fn South() -> Vector2 { return Vector2 { x: 0, y: 1 }; }
-    fn East() -> Vector2 { return Vector2 { x: 1, y: 0 }; }
-    fn West() -> Vector2 { return Vector2 { x: -1, y: 0 }; }
+    const fn North() -> Vector2 { return Vector2 { x: 0, y: -1 }; }
+    const fn South() -> Vector2 { return Vector2 { x: 0, y: 1 }; }
+    const fn East() -> Vector2 { return Vector2 { x: 1, y: 0 }; }
+    const fn West() -> Vector2 { return Vector2 { x: -1, y: 0 }; }
+}
+
+impl<'a, 'b> Add<&'b Vector2> for &'a Vector2 {
+    type Output = Vector2;
+
+    fn add(self, other: &'b Vector2) -> Vector2 {
+        Vector2 {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl<'a, 'b> Add<Vector2> for &'a Vector2 {
+    type Output = Vector2;
+
+    fn add(self, other: Vector2) -> Vector2 {
+        Vector2 {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
 }
 
 impl Hash for Vector2 {
@@ -77,10 +107,10 @@ AAAAAA";
     let width = grid[0].len();
     let height = grid.len();
 
-    const SIDE_NORTH: i32 = 1;
-    const SIDE_SOUTH: i32 = 2;
-    const SIDE_EAST: i32 = 3;
-    const SIDE_WEST: i32 = 4;
+    const NORTH: Vector2 = Vector2::North();
+    const SOUTH: Vector2 = Vector2::South();
+    const EAST: Vector2 = Vector2::East();
+    const WEST: Vector2 = Vector2::West();
 
     for y in 0..height {
         for x in 0..width {
@@ -96,7 +126,7 @@ AAAAAA";
     
             let mut area = 0;
             let mut perimeter = 0;
-            let mut sides: HashMap<i32, HashSet<Vector2>> = HashMap::new();
+            let mut sides: HashMap<Vector2, HashSet<Vector2>> = HashMap::new();
 
             while to_investigate.len() > 0 {
                 let pos = to_investigate.pop().unwrap();
@@ -111,41 +141,16 @@ AAAAAA";
                 investigated.insert(pos.clone());
 
                 // Check all four directions
-                let north = pos.add(&(Vector2::North()));
-                let south = pos.add(&(Vector2::South()));
-                let east = pos.add(&(Vector2::East()));
-                let west = pos.add(&(Vector2::West()));
-    
-                if get_plant_safe(&grid, &north, width, height) != plant {
-                    perimeter += 1;
-                    sides.entry(SIDE_NORTH).or_insert_with(|| HashSet::new()).insert(pos.clone());
-                }
-                else if !investigated.contains(&north) {
-                    to_investigate.push(north);
-                }
-    
-                if get_plant_safe(&grid, &south, width, height) != plant {
-                    perimeter += 1;
-                    sides.entry(SIDE_SOUTH).or_insert_with(|| HashSet::new()).insert(pos.clone());
-                }
-                else if !investigated.contains(&south) {
-                    to_investigate.push(south);
-                }
-    
-                if get_plant_safe(&grid, &east, width, height) != plant {
-                    perimeter += 1;
-                    sides.entry(SIDE_EAST).or_insert_with(|| HashSet::new()).insert(pos.clone());
-                }
-                else if !investigated.contains(&east) {
-                    to_investigate.push(east);
-                }
-    
-                if get_plant_safe(&grid, &west, width, height) != plant {
-                    perimeter += 1;
-                    sides.entry(SIDE_WEST).or_insert_with(|| HashSet::new()).insert(pos.clone());
-                }
-                else if !investigated.contains(&west) {
-                    to_investigate.push(west);
+                for side in vec!(NORTH, SOUTH, EAST, WEST) {
+                    let new_pos = pos.add(&side);
+
+                    if get_plant_safe(&grid, &new_pos, width, height) != plant {
+                        perimeter += 1;
+                        sides.entry(side).or_insert_with(|| HashSet::new()).insert(pos.clone());
+                    }
+                    else if !investigated.contains(&new_pos) {
+                        to_investigate.push(new_pos);
+                    }
                 }
             }
     
@@ -153,9 +158,9 @@ AAAAAA";
 
             let mut num_sides = 0;
 
-            for side in vec!(SIDE_NORTH, SIDE_SOUTH, SIDE_EAST, SIDE_WEST) {
+            for side in vec!(NORTH, SOUTH, EAST, WEST) {
 
-                let is_north_or_south = side == SIDE_NORTH || side == SIDE_SOUTH;
+                let is_north_or_south = side == NORTH || side == SOUTH;
 
                 // Distinct y coords for N/S, distinct x coords for E/W
                 let distinct_coords = sides.get(&side).unwrap().iter().map(|vec| if is_north_or_south { vec.y } else { vec.x }).collect::<HashSet<_>>();
