@@ -1,6 +1,6 @@
-use std::collections::{HashMap, HashSet};
-use std::io::Read;
-use std::fs::File;
+use std::collections::HashSet;
+use std::io::{BufWriter, Read, Write};
+use std::fs::{self, File};
 use regex::Regex;
 use std::cmp::min;
 use std::hash::Hash;
@@ -128,7 +128,7 @@ p=9,5 v=-3,-3";
     let mut sum_quadrant3 = 0;
     let mut sum_quadrant4 = 0;
 
-    for line in lines {
+    for line in lines.iter() {
         let robot_data = robot_regex.captures_iter(line).map(|m| m).next().unwrap();
 
         let robot = Robot {
@@ -136,7 +136,7 @@ p=9,5 v=-3,-3";
             velocity: Vector2::from(&(robot_data[3].parse::<i32>().unwrap(), robot_data[4].parse::<i32>().unwrap()))
         };
 
-        println!("{:?}, {:?}", robot.position, robot.velocity);
+        //println!("{:?}, {:?}", robot.position, robot.velocity);
         const STEPS: i32 = 100;
 
         let final_pos = Vector2::new(
@@ -163,11 +163,64 @@ p=9,5 v=-3,-3";
         }
     }
 
+    let mut robots: Vec<Robot> = Vec::new();
+
+    for line in lines {
+        let robot_data = robot_regex.captures_iter(line).map(|m| m).next().unwrap();
+
+        let robot = Robot {
+            position: Vector2::from(&(robot_data[1].parse::<i32>().unwrap(), robot_data[2].parse::<i32>().unwrap())),
+            velocity: Vector2::from(&(robot_data[3].parse::<i32>().unwrap(), robot_data[4].parse::<i32>().unwrap()))
+        };
+        robots.push(robot);
+    }
+
+    let mut step = 6667;
+    let mut final_positions: HashSet<Vector2> = HashSet::new();
+    let f = File::create("output.txt").expect("Unable to create file");
+    let mut f = BufWriter::new(f);
+    
+    loop {
+        step += 1;
+        if step % 10000 == 0 {
+            println!("Step {}", step);
+        }
+        final_positions.clear();
+
+        for i in 0..robots.len() {
+            let final_pos = Vector2::new(
+                (robots[i].position.x + robots[i].velocity.x * step + step * WIDTH) % WIDTH,
+                (robots[i].position.y + robots[i].velocity.y * step + step * HEIGHT) % HEIGHT);
+
+            final_positions.insert(final_pos);
+        }
+
+        for y in 0..HEIGHT {
+            let mut line = String::with_capacity((WIDTH as usize) + 1);
+            for x in 0..WIDTH {
+                if final_positions.contains(&Vector2 { x, y }) {
+                    line.push('X');
+                }
+                else {
+                    line.push('.');
+                }
+            }
+            line.push('\n');
+            f.write_all(line.as_bytes()).expect("Unable to write data");
+        }
+
+        f.write(&vec!('\n' as u8)).expect("Unable to write data");
+        
+        if step > 6667 {
+            break;
+        }
+    }
+
     let sum_part1 = sum_quadrant1 * sum_quadrant2 * sum_quadrant3 * sum_quadrant4;
 
     let elapsed = now.elapsed();
 
-    println!("[Part1]: Number of robots in quadrants multiplied = {0}", sum_part1); // ???
-    println!("[Part2]: ... = {0}", sum_part2); // ???
+    println!("[Part1]: Number of robots in quadrants multiplied = {0}", sum_part1); // 230461440
+    println!("[Part2]: Christmas tree at = {0}", step); // 6668
     println!("Elapsed Time: {:.2?}", elapsed);
 }
