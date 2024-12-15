@@ -92,16 +92,27 @@ struct Robot {
 
 fn main() {
     // Create an empty mutable string
-    let _test_content = "########
-#..O.O.#
-##@.O..#
-#...O..#
-#.#.O..#
-#...O..#
-#......#
-########
+    let _test_content = "##########
+#..O..O.O#
+#......O.#
+#.OO..O.O#
+#..O@..O.#
+#O#..O...#
+#O..O..O.#
+#.OO.O.OO#
+#....O...#
+##########
 
-<^^>>>vv<v>>v<<
+<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
+vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
+><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
+<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
+^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
+^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
+>^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
+<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
+^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
+v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
 ";
     
     // Read a file in the local file system
@@ -129,8 +140,7 @@ fn main() {
 
     let directions = dir_lines.into_iter().map(|x| x.chars()).flatten().collect::<Vec<_>>();
 
-    let mut grid: Vec<Vec<char>> = map_lines.into_iter().map(|x| x.chars().collect()).collect();
-    let mut sum_part1 = 0;
+    let mut grid: Vec<Vec<char>> = map_lines.clone().into_iter().map(|x| x.chars().collect()).collect();
 
     let width = grid[0].len();
     let height = grid.len();
@@ -142,13 +152,10 @@ fn main() {
     let robot_x = grid[robot_y].iter().position(|c| *c == '@').unwrap();
     let mut robot = Vector2::new(robot_x as i32, robot_y as i32);
 
-    println!("Robot at {0}|{1}", robot_x, robot_y);
-    println!("Directions {:?}", directions);
-
     // Mark the robot's position as empty
     grid[robot.y as usize][robot.x as usize] = '.';
 
-    'DirectionLoop: for dir in directions {
+    'DirectionLoop: for dir in directions.iter() {
 
         //print_grid(&grid, &robot, width, height);
 
@@ -206,7 +213,9 @@ fn main() {
         }
     }
 
-    print_grid(&grid, &robot, width, height);
+    //print_grid(&grid, &robot, width, height);
+
+    let mut sum_part1 = 0;
 
     for y in 0..height {
         for x in 0..width {
@@ -216,11 +225,157 @@ fn main() {
         }
     }
 
-    let elapsed = now.elapsed();
+    let elapsed_part1 = now.elapsed();
 
-    println!("[Part1]: Sum of GPS coords = {0}", sum_part1); // ???
-    println!("[Part2]: ... = {0}", 0); // ???
-    println!("Elapsed Time: {:.2?}", elapsed);
+    // Part 2: Scale it
+
+    let input: Vec<Vec<char>> = map_lines.into_iter().map(|x| x.chars().collect()).collect();
+    let mut grid: Vec<Vec<char>> = Vec::with_capacity(input.len());
+
+    for line in input {
+        let mut grid_line: Vec<char> = Vec::with_capacity(line.len());
+        for ch in line {
+            if ch == '#' {
+                grid_line.push('#');
+                grid_line.push('#');
+            }
+            else if ch == 'O' {
+                grid_line.push('[');
+                grid_line.push(']');
+            }
+            else if ch == '.' {
+                grid_line.push('.');
+                grid_line.push('.');
+            }
+            else if ch == '@' {
+                grid_line.push('@');
+                grid_line.push('.');
+            }
+        }
+        grid.push(grid_line);
+    }
+
+    let robot_y = grid.iter().position(|line| line.iter().position(|c| *c == '@').is_some()).unwrap();
+    let robot_x = grid[robot_y].iter().position(|c| *c == '@').unwrap();
+    let mut robot = Vector2::new(robot_x as i32, robot_y as i32);
+    
+    // Mark the robot's position as empty
+    grid[robot.y as usize][robot.x as usize] = '.';
+    
+    let width = grid[0].len();
+    let height = grid.len();
+
+    'DirectionLoop: for dir in directions {
+
+        //print_grid(&grid, &robot, width, height);
+
+        let direction = match dir {
+            '<' => Vector2::West(),
+            '>' => Vector2::East(),
+            '^' => Vector2::North(),
+            'v' => Vector2::South(),
+            _ => panic!("Unknown input")
+        };
+
+        //println!("New direction: {0}", dir);
+
+        let new_pos = robot.add(&direction);
+        let new_pos_ch = get_char_safe(&grid, &new_pos, width, height);
+
+        if new_pos_ch == '.' { // empty
+            robot = new_pos;
+            continue;
+        }
+        else if new_pos_ch == '[' || new_pos_ch == ']' { // box
+            
+            // Accumulate blocked positions
+            let mut move_stack: Vec<HashSet<Vector2>> = Vec::new();
+            move_stack.push(HashSet::new());
+            
+            let mut box_positions = move_stack.last_mut().unwrap();
+
+            if new_pos_ch == '[' {
+                box_positions.insert(new_pos.clone());
+                box_positions.insert(Vector2::new(new_pos.x + 1, new_pos.y));
+            }
+            else {
+                box_positions.insert(new_pos.clone());
+                box_positions.insert(Vector2::new(new_pos.x - 1, new_pos.y));
+            }
+
+            // Check the location beyond the blocked positions
+            while !box_positions.is_empty() {
+
+                let mut new_boxes = HashSet::new();
+
+                // Check each blocked pos to see if we can move it
+                for blocked_pos in box_positions.iter() {
+                    let beyond_pos = blocked_pos.add(&direction);
+                    if box_positions.contains(&beyond_pos) {
+                        continue; // box cannot block itself
+                    }
+    
+                    let ch = get_char_safe(&grid, &beyond_pos, width, height);
+    
+                    if ch == '#' {
+                        continue 'DirectionLoop; // Hit a wall
+                    }
+                    else if ch == '[' { // got new boxes
+                        new_boxes.insert(beyond_pos.clone());
+                        new_boxes.insert(Vector2::new(beyond_pos.x + 1, beyond_pos.y));
+                    }
+                    else if ch == ']' { // got new boxes
+                        new_boxes.insert(beyond_pos.clone());
+                        new_boxes.insert(Vector2::new(beyond_pos.x - 1, beyond_pos.y));
+                    }
+                }
+
+                move_stack.push(new_boxes);
+                box_positions = move_stack.last_mut().unwrap();
+            }
+
+            // If we got here, we can push
+            while !move_stack.is_empty() {
+                let mut positions = move_stack.pop().unwrap().iter().map(|x| x.clone()).collect::<Vec<_>>();
+
+                positions.sort_by(|a, b| a.x.cmp(&b.x));
+
+                if dir == '>' {
+                    positions.reverse();
+                }
+
+                for pos in positions {
+                    let target_pos = pos.add(&direction);
+                    grid[target_pos.y as usize][target_pos.x as usize] = grid[pos.y as usize][pos.x as usize];
+                    grid[pos.y as usize][pos.x as usize] = '.';
+                }
+            }
+
+            robot = new_pos;
+        }
+        else { 
+            // Wall, don't move
+        }
+    }
+
+    let mut sum_part2 = 0;
+
+    for y in 0..height {
+        for x in 0..width {
+            if get_char_safe(&grid, &Vector2::new(x as i32, y as i32), width, height) == '[' {
+                sum_part2 += y * 100 + x;
+            }
+        }
+    }
+
+    let elapsed_part2 = now.elapsed();
+
+    //print_grid(&grid, &robot, width, height);
+
+    println!("[Part1]: Sum of GPS coords = {0}", sum_part1); // 1318523
+    println!("[Part2]: Sum of GPS coords = {0}", sum_part2); // 1337648
+    println!("Elapsed Time: {:.2?}", elapsed_part1);
+    println!("Elapsed Time: {:.2?}", elapsed_part2);
 }
 
 fn print_grid(grid: &Vec<Vec<char>>, robot: &Vector2, width: usize, height: usize) {
