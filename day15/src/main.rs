@@ -1,8 +1,6 @@
 use std::collections::HashSet;
-use std::io::{BufWriter, Read, Write};
-use std::fs::{self, File};
-use regex::Regex;
-use std::cmp::min;
+use std::io::Read;
+use std::fs::File;
 use std::hash::Hash;
 
 use std::ops::Add;
@@ -137,147 +135,34 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
     }
 
     let dir_lines = lines.into_iter().skip(i).collect::<Vec<_>>();
-
     let directions = dir_lines.into_iter().map(|x| x.chars()).flatten().collect::<Vec<_>>();
-
-    let mut grid: Vec<Vec<char>> = map_lines.clone().into_iter().map(|x| x.chars().collect()).collect();
-
-    let width = grid[0].len();
-    let height = grid.len();
 
     use std::time::Instant;
     let now = Instant::now();
-/*
-    let robot_y = grid.iter().position(|line| line.iter().position(|c| *c == '@').is_some()).unwrap();
-    let robot_x = grid[robot_y].iter().position(|c| *c == '@').unwrap();
-    let mut robot = Vector2::new(robot_x as i32, robot_y as i32);
 
-    // Mark the robot's position as empty
-    grid[robot.y as usize][robot.x as usize] = '.';
-
-    'DirectionLoop: for dir in directions.iter() {
-
-        //print_grid(&grid, &robot, width, height);
-
-        let direction = match dir {
-            '<' => Vector2::West(),
-            '>' => Vector2::East(),
-            '^' => Vector2::North(),
-            'v' => Vector2::South(),
-            _ => panic!("Unknown input")
-        };
-
-        let new_pos = robot.add(&direction);
-        let new_pos_ch = get_char_safe(&grid, &new_pos, width, height);
-
-        if new_pos_ch == '.' { // empty
-            robot = new_pos;
-            continue;
-        }
-        else if new_pos_ch == 'O' { // box
-            
-            let mut beyond_box = new_pos.add(&direction);
-
-            while pos_within_grid(&beyond_box, width, height) {
-                let ch = get_char_safe(&grid, &beyond_box, width, height);
-
-                if ch == '.' {
-                    break;
-                }
-                if ch == '#' {
-                    continue 'DirectionLoop; // hit a wall
-                }
-                beyond_box = beyond_box.add(&direction);
-            }
-
-            if get_char_safe(&grid, &beyond_box, width, height) == '.' {
-                // Move all boxes
-                let opposite_direction = Vector2::new(-direction.x, -direction.y);
-                let mut target_pos = beyond_box;
-                let mut before_target_pos = target_pos.add(&opposite_direction);
-
-                while before_target_pos != robot {
-                    grid[target_pos.y as usize][target_pos.x as usize] = grid[before_target_pos.y as usize][before_target_pos.x as usize];
-                    grid[before_target_pos.y as usize][before_target_pos.x as usize] = '.';
-                    target_pos = target_pos.add(&opposite_direction);
-                    before_target_pos = target_pos.add(&opposite_direction);
-                }
-
-                robot = new_pos;
-
-                continue 'DirectionLoop;
-            }
-        }
-        else { 
-            // Wall, don't move
-        }
-    }
-
-    //print_grid(&grid, &robot, width, height);
-
-    let mut sum_part1 = 0;
-
-    for y in 0..height {
-        for x in 0..width {
-            if get_char_safe(&grid, &Vector2::new(x as i32, y as i32), width, height) == 'O' {
-                sum_part1 += y * 100 + x;
-            }
-        }
-    }
-*/
-    // Part 2: Scale it
-/* 
-    let input: Vec<Vec<char>> = map_lines.into_iter().map(|x| x.chars().collect()).collect();
-    let mut grid: Vec<Vec<char>> = Vec::with_capacity(input.len());
-
-    for line in input {
-        let mut grid_line: Vec<char> = Vec::with_capacity(line.len());
-        for ch in line {
-            if ch == '#' {
-                grid_line.push('#');
-                grid_line.push('#');
-            }
-            else if ch == 'O' {
-                grid_line.push('[');
-                grid_line.push(']');
-            }
-            else if ch == '.' {
-                grid_line.push('.');
-                grid_line.push('.');
-            }
-            else if ch == '@' {
-                grid_line.push('@');
-                grid_line.push('.');
-            }
-        }
-        grid.push(grid_line);
-    }
-
-    let robot_y = grid.iter().position(|line| line.iter().position(|c| *c == '@').is_some()).unwrap();
-    let robot_x = grid[robot_y].iter().position(|c| *c == '@').unwrap();
-    */
     for part  in 1..3 {
 
-        if part == 2 {
-            let input: Vec<Vec<char>> = map_lines.iter().map(|x| x.chars().collect()).collect();
-            let mut scaled: Vec<Vec<char>> = Vec::with_capacity(input.len());
+        let mut grid: Vec<Vec<char>> = map_lines.iter().map(|x| x.chars().collect()).collect();
 
-            for line in input {
+        if part == 2 {
+            let mut scaled: Vec<Vec<char>> = Vec::with_capacity(grid.len());
+
+            for line in grid.iter() {
                 let mut grid_line: Vec<char> = Vec::with_capacity(line.len());
                 for ch in line {
-                    if ch == '#' {
+                    if *ch == '#' {
                         grid_line.push('#');
                         grid_line.push('#');
                     }
-                    else if ch == 'O' {
+                    else if *ch == 'O' {
                         grid_line.push('[');
                         grid_line.push(']');
                     }
-                    else if ch == '.' {
+                    else if *ch == '.' {
                         grid_line.push('.');
                         grid_line.push('.');
                     }
-                    else if ch == '@' {
+                    else if *ch == '@' {
                         grid_line.push('@');
                         grid_line.push('.');
                     }
