@@ -147,7 +147,7 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
 
     use std::time::Instant;
     let now = Instant::now();
-
+/*
     let robot_y = grid.iter().position(|line| line.iter().position(|c| *c == '@').is_some()).unwrap();
     let robot_x = grid[robot_y].iter().position(|c| *c == '@').unwrap();
     let mut robot = Vector2::new(robot_x as i32, robot_y as i32);
@@ -224,11 +224,9 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
             }
         }
     }
-
-    let elapsed_part1 = now.elapsed();
-
+*/
     // Part 2: Scale it
-
+/* 
     let input: Vec<Vec<char>> = map_lines.into_iter().map(|x| x.chars().collect()).collect();
     let mut grid: Vec<Vec<char>> = Vec::with_capacity(input.len());
 
@@ -257,125 +255,168 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
 
     let robot_y = grid.iter().position(|line| line.iter().position(|c| *c == '@').is_some()).unwrap();
     let robot_x = grid[robot_y].iter().position(|c| *c == '@').unwrap();
-    let mut robot = Vector2::new(robot_x as i32, robot_y as i32);
-    
-    // Mark the robot's position as empty
-    grid[robot.y as usize][robot.x as usize] = '.';
-    
-    let width = grid[0].len();
-    let height = grid.len();
+    */
+    for part  in 1..3 {
 
-    'DirectionLoop: for dir in directions {
+        if part == 2 {
+            let input: Vec<Vec<char>> = map_lines.iter().map(|x| x.chars().collect()).collect();
+            let mut scaled: Vec<Vec<char>> = Vec::with_capacity(input.len());
 
-        //print_grid(&grid, &robot, width, height);
-
-        let direction = match dir {
-            '<' => Vector2::West(),
-            '>' => Vector2::East(),
-            '^' => Vector2::North(),
-            'v' => Vector2::South(),
-            _ => panic!("Unknown input")
-        };
-
-        //println!("New direction: {0}", dir);
-
-        let new_pos = robot.add(&direction);
-        let new_pos_ch = get_char_safe(&grid, &new_pos, width, height);
-
-        if new_pos_ch == '.' { // empty
-            robot = new_pos;
-            continue;
-        }
-        else if new_pos_ch == '[' || new_pos_ch == ']' { // box
-            
-            // Accumulate blocked positions
-            let mut move_stack: Vec<HashSet<Vector2>> = Vec::new();
-            move_stack.push(HashSet::new());
-            
-            let mut box_positions = move_stack.last_mut().unwrap();
-
-            if new_pos_ch == '[' {
-                box_positions.insert(new_pos.clone());
-                box_positions.insert(Vector2::new(new_pos.x + 1, new_pos.y));
-            }
-            else {
-                box_positions.insert(new_pos.clone());
-                box_positions.insert(Vector2::new(new_pos.x - 1, new_pos.y));
-            }
-
-            // Check the location beyond the blocked positions
-            while !box_positions.is_empty() {
-
-                let mut new_boxes = HashSet::new();
-
-                // Check each blocked pos to see if we can move it
-                for blocked_pos in box_positions.iter() {
-                    let beyond_pos = blocked_pos.add(&direction);
-                    if box_positions.contains(&beyond_pos) {
-                        continue; // box cannot block itself
-                    }
-    
-                    let ch = get_char_safe(&grid, &beyond_pos, width, height);
-    
+            for line in input {
+                let mut grid_line: Vec<char> = Vec::with_capacity(line.len());
+                for ch in line {
                     if ch == '#' {
-                        continue 'DirectionLoop; // Hit a wall
+                        grid_line.push('#');
+                        grid_line.push('#');
                     }
-                    else if ch == '[' { // got new boxes
-                        new_boxes.insert(beyond_pos.clone());
-                        new_boxes.insert(Vector2::new(beyond_pos.x + 1, beyond_pos.y));
+                    else if ch == 'O' {
+                        grid_line.push('[');
+                        grid_line.push(']');
                     }
-                    else if ch == ']' { // got new boxes
-                        new_boxes.insert(beyond_pos.clone());
-                        new_boxes.insert(Vector2::new(beyond_pos.x - 1, beyond_pos.y));
+                    else if ch == '.' {
+                        grid_line.push('.');
+                        grid_line.push('.');
+                    }
+                    else if ch == '@' {
+                        grid_line.push('@');
+                        grid_line.push('.');
                     }
                 }
-
-                move_stack.push(new_boxes);
-                box_positions = move_stack.last_mut().unwrap();
+                scaled.push(grid_line);
             }
 
-            // If we got here, we can push
-            while !move_stack.is_empty() {
-                let mut positions = move_stack.pop().unwrap().iter().map(|x| x.clone()).collect::<Vec<_>>();
+            grid = scaled;
+        }
 
-                positions.sort_by(|a, b| a.x.cmp(&b.x));
+        let robot_y = grid.iter().position(|line| line.iter().position(|c| *c == '@').is_some()).unwrap();
+        let robot_x = grid[robot_y].iter().position(|c| *c == '@').unwrap();
 
-                if dir == '>' {
-                    positions.reverse();
+        let mut robot = Vector2::new(robot_x as i32, robot_y as i32);
+
+        // Mark the robot's position as empty
+        grid[robot.y as usize][robot.x as usize] = '.';
+        
+        let width = grid[0].len();
+        let height = grid.len();
+
+        'DirectionLoop: for dir in directions.iter() {
+
+            //print_grid(&grid, &robot, width, height);
+
+            let direction = match dir {
+                '<' => Vector2::West(),
+                '>' => Vector2::East(),
+                '^' => Vector2::North(),
+                'v' => Vector2::South(),
+                _ => panic!("Unknown input")
+            };
+
+            //println!("New direction: {0}", dir);
+
+            let new_pos = robot.add(&direction);
+            let new_pos_ch = get_char_safe(&grid, &new_pos, width, height);
+
+            if new_pos_ch == '.' { // empty
+                robot = new_pos;
+                continue;
+            }
+            else if new_pos_ch == '[' || new_pos_ch == ']' || new_pos_ch == 'O' { // box
+                
+                // Accumulate blocked positions
+                let mut move_stack: Vec<HashSet<Vector2>> = Vec::new();
+                move_stack.push(HashSet::new());
+                
+                let mut box_positions = move_stack.last_mut().unwrap();
+
+                if new_pos_ch == '[' {
+                    box_positions.insert(new_pos.clone());
+                    box_positions.insert(Vector2::new(new_pos.x + 1, new_pos.y));
+                }
+                else if new_pos_ch == ']' {
+                    box_positions.insert(new_pos.clone());
+                    box_positions.insert(Vector2::new(new_pos.x - 1, new_pos.y));
+                }
+                else if new_pos_ch == 'O' {
+                    box_positions.insert(new_pos.clone());
                 }
 
-                for pos in positions {
-                    let target_pos = pos.add(&direction);
-                    grid[target_pos.y as usize][target_pos.x as usize] = grid[pos.y as usize][pos.x as usize];
-                    grid[pos.y as usize][pos.x as usize] = '.';
+                // Check the location beyond the blocked positions
+                while !box_positions.is_empty() {
+
+                    let mut new_boxes = HashSet::new();
+
+                    // Check each blocked pos to see if we can move it
+                    for blocked_pos in box_positions.iter() {
+                        let beyond_pos = blocked_pos.add(&direction);
+                        if box_positions.contains(&beyond_pos) {
+                            continue; // box cannot block itself
+                        }
+        
+                        let ch = get_char_safe(&grid, &beyond_pos, width, height);
+        
+                        if ch == '#' {
+                            continue 'DirectionLoop; // Hit a wall
+                        }
+                        else if ch == '[' { // got new boxes
+                            new_boxes.insert(beyond_pos.clone());
+                            new_boxes.insert(Vector2::new(beyond_pos.x + 1, beyond_pos.y));
+                        }
+                        else if ch == ']' { // got new boxes
+                            new_boxes.insert(beyond_pos.clone());
+                            new_boxes.insert(Vector2::new(beyond_pos.x - 1, beyond_pos.y));
+                        }
+                        else if ch == 'O' {
+                            new_boxes.insert(beyond_pos.clone());
+                        }
+                    }
+
+                    move_stack.push(new_boxes);
+                    box_positions = move_stack.last_mut().unwrap();
+                }
+
+                // If we got here, we can push
+                while !move_stack.is_empty() {
+                    let mut positions = move_stack.pop().unwrap().iter().map(|x| x.clone()).collect::<Vec<_>>();
+
+                    positions.sort_by(|a, b| a.x.cmp(&b.x));
+
+                    if *dir == '>' {
+                        positions.reverse();
+                    }
+
+                    for pos in positions {
+                        let target_pos = pos.add(&direction);
+                        grid[target_pos.y as usize][target_pos.x as usize] = grid[pos.y as usize][pos.x as usize];
+                        grid[pos.y as usize][pos.x as usize] = '.';
+                    }
+                }
+
+                robot = new_pos;
+            }
+            else { 
+                // Wall, don't move
+            }
+        }
+
+        let mut sum = 0;
+
+        for y in 0..height {
+            for x in 0..width {
+                let ch = get_char_safe(&grid, &Vector2::new(x as i32, y as i32), width, height);
+                if ch == '[' || ch == 'O' {
+                    sum += y * 100 + x;
                 }
             }
+        }
 
-            robot = new_pos;
-        }
-        else { 
-            // Wall, don't move
-        }
+        // Part 1 = 1318523
+        // Part 2 = 1337648
+        println!("[Part{part}]: Sum of GPS coords = {sum}"); 
     }
 
-    let mut sum_part2 = 0;
+    let elapsed = now.elapsed();
 
-    for y in 0..height {
-        for x in 0..width {
-            if get_char_safe(&grid, &Vector2::new(x as i32, y as i32), width, height) == '[' {
-                sum_part2 += y * 100 + x;
-            }
-        }
-    }
-
-    let elapsed_part2 = now.elapsed();
-
-    //print_grid(&grid, &robot, width, height);
-
-    println!("[Part1]: Sum of GPS coords = {0}", sum_part1); // 1318523
-    println!("[Part2]: Sum of GPS coords = {0}", sum_part2); // 1337648
-    println!("Elapsed Time: {:.2?}", elapsed_part1);
-    println!("Elapsed Time: {:.2?}", elapsed_part2);
+    println!("Elapsed Time: {:.2?}", elapsed);
 }
 
 fn print_grid(grid: &Vec<Vec<char>>, robot: &Vector2, width: usize, height: usize) {
